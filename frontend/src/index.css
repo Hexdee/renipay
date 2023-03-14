@@ -1,0 +1,275 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*,
+*::before,
+*::after {
+  margin: 0;
+}
+
+body {
+  font-weight: 400;
+  /* background: #060606; */
+  font-family: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+button:focus {
+  outline: none !important;
+}
+
+/* This affects of input elements of type radio across the app  */
+
+input[type="radio"] {
+  /* remove standard background appearance */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* create custom radiobutton appearance */
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  /* background-color only for content */
+  background-clip: content-box;
+  border: 2px solid #A3A1A1;
+  background-color: transparent;
+  border-radius: 50%;
+}
+
+/* appearance for checked radiobutton */
+input[type="radio"]:checked {
+  border-color: #fff;
+  background-color: #fff;
+}
+
+/* optional styles, I'm using this for centering radiobuttons
+.flex {
+  display: flex;
+  align-items: center;
+} */
+
+label,
+input {
+  display: inline-block;
+}
+
+.multiline-ellipsis {
+  /* height: 50px; */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; /* start showing ellipsis when 3rd line is reached */
+  white-space: pre-wrap; /* let the text wrap preserving spaces */
+}
+
+.scroll-y-false {
+  overflow-x: scroll;
+  overflow-y: auto;
+}
+
+.dashboard-grid {
+  width: 100vw;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 10px;
+  /* background-color: orange; */
+}
+
+.dashboard-grid:first-child {
+  width: 40%;
+}
+.dashboard-grid:last-child {
+  width: 70%;
+}
+
+@layer base {
+  .typography-semibold-28px {
+    @apply font-medium text-h4 leading-l4;
+  }
+
+  .typography-normal-14px {
+    @apply text-h2 leading-l7 font-normal;
+  }
+  .typography-regular-16px {
+    @apply font-normal text-h3 leading-l6;
+  }
+
+  .wave {
+    animation-name: wave-animation;  /* Refers to the name of your @keyframes element below */
+    animation-duration: 2.5s;        /* Change to speed up or slow down */
+    animation-iteration-count: infinite;  /* Never stop waving :) */
+    transform-origin: 70% 70%;       /* Pivot around the bottom-left palm */
+    display: inline-block;
+  }
+  
+  @keyframes wave-animation {
+      0% { transform: rotate( 0.0deg) }
+     10% { transform: rotate(14.0deg) }  /* The following five values can be played with to make the waving more or less extreme */
+     20% { transform: rotate(-8.0deg) }
+     30% { transform: rotate(14.0deg) }
+     40% { transform: rotate(-4.0deg) }
+     50% { transform: rotate(10.0deg) }
+     60% { transform: rotate( 0.0deg) }  /* Reset for the last half to pause */
+    100% { transform: rotate( 0.0deg) }
+  }
+  
+  
+
+ 
+  table {
+    table-layout: fixed;
+    /* border-collapse: separate;  */
+    border-spacing: 0 15px;
+  }
+  tr {
+    @apply bg-[#ffffff];
+    /* border-bottom: 1px  #D9D9D9 solid;+++ */
+    /* /* padding: 10px 0;+,,,,, */
+    /* font-family: 'Roboto';
+font-style: normal;
+font-weight: 500;
+font-size: 16px;
+line-height: 20px; */
+  }
+
+  th {
+    @apply leading-l6 text-h2  text-left pb-2 font-medium mb-2;
+  }
+  td {
+    /* display: inline-flex; */
+    @apply text-left pr-4 text-h2 leading-l6;
+    vertical-align: middle;
+  }
+  tr {
+    @apply text-h2;
+  }
+
+  td,
+  th {
+    /* @apply py-[10px] pl-[0] pr-[30px] ['word-break': break-all]; */
+    /* padding: 10px 30px 10px 0; */
+    /* @apply ; */
+    word-break: break-all;
+  }
+
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  
+  .two-lines{
+
+
+  display: -webkit-box;
+  /* max-width: 400px; */
+  width: 100%;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  }
+  .one-line{
+
+
+  display: -webkit-box;
+  /* max-width: 400px; */
+  width: 100%;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  }
+.non-one-line{
+  display: block;
+  text-overflow: initial;
+}
+
+  .four-lines{
+
+
+  display: -webkit-box;
+  /* max-width: 400px; */
+  /* width: 100%; */
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  }
+
+  .page-title{
+    @apply text-primary-06 md:text-h4 text-h5 font-bold text-center;
+  }
+  .grid-grid{
+    display: grid;
+    grid-template-columns: repeat( auto-fill, minmax(180px, 1fr) );
+    gap: 2px;
+    width: 100%;
+  }
+  .movie-grid{
+    display: grid;
+    grid-template-columns: repeat( auto-fit, minmax(150px, 200px) );
+    /* gap: 2px; */
+    /* gap: 4px 0px; */
+    row-gap: 15px;
+    width: 100%;
+  }
+
+  @media screen {
+    
+  }
+  /* spinner css code ----  */
+
+  .spinner {
+    animation: rotate 2s linear infinite;
+    z-index: 2;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin: -25px 0 0 -25px;
+    width: 50px;
+    height: 50px;
+  }
+  .dash .path {
+    /* stroke: hsl(210, 70, 75); */
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+  }
+
+  @keyframes rotate {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes dash {
+    0% {
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -35;
+    }
+    100% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -124;
+    }
+  }
+}
