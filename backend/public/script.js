@@ -1,8 +1,8 @@
-var reniAddress = "0x1350Fd1224E52D914AF74d18F979402bfc86656D";
-var reniAbi = [{ "inputs": [{ "internalType": "address", "name": "_token", "type": "address" }, { "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "string", "name": "_transactionId", "type": "string" }, { "internalType": "string", "name": "_merchant", "type": "string" }], "name": "makePayment", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "address", "name": "_token", "type": "address" }], "name": "requiredTokenAmount", "outputs": [{ "internalType": "uint256", "name": "_tokenAmount", "type": "uint256" }], "stateMutability": "view", "type": "function" }];
+var reniAddress = "0x539cc5c501F3c1797849BD85f6d6137be922be15";
+var reniAbi = [{ "inputs": [{ "internalType": "address", "name": "_token", "type": "address" }, { "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_description", "type": "string" }, { "internalType": "string", "name": "_merchant", "type": "string" }], "name": "makePayment", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "address", "name": "_token", "type": "address" }], "name": "requiredTokenAmount", "outputs": [{ "internalType": "uint256", "name": "_tokenAmount", "type": "uint256" }], "stateMutability": "view", "type": "function" }];
 var erc20Abi = [{ "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "approve", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }], "name": "allowance", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }];
 var address0 = "0x0000000000000000000000000000000000000000";
-
+var weth = "0x5B67676a984807a212b1c59eBFc9B3568a474F0a"
 
 // https://docs.walletconnect.com/quick-start/dapps/web3-provider
 var provider = new WalletConnectProvider.default({
@@ -17,6 +17,7 @@ var provider = new WalletConnectProvider.default({
 });
 
 document.getElementById("token").addEventListener("change", async (e) => {
+    //
     const requiredTokenValue = 1;
     const tokenAddress = e.target.value;
     const tokenContract = await contract(erc20Abi, tokenAddress);
@@ -86,7 +87,7 @@ const init = async (account) => {
         window.account = account;
         const matic = {
             symbol: "MATIC",
-            token_address: "0x0000000000000000000000000000000000000000",
+            token_address: address0,
             balance: Number(await window.ethereum.request({ method: 'eth_getBalance', params: [account, 'latest'] }))
         }
 
@@ -190,11 +191,6 @@ var disconnect = async () => {
     }
 }
 
-
-// var address = "0x4b4f8ca8fb3e66b5ddafcebfe86312cec486dae1"
-// var abi = [{"inputs":[],"name":"count","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"increment","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}]
-
-
 const approveToken = async () => {
     const tokenAddress = document.getElementById("token").value;
     const payBtn = document.getElementById("pay");
@@ -215,20 +211,32 @@ const approveToken = async () => {
     }
 }
 
+const requiredTokenAmount = async (token, amountInUSD) => {
+    const reni = await contract(reniAbi, reniAddress);
+    const amount = await reni.methods.requiredTokenAmount(web3.utils.toWei(amountInUSD), token).call();
+    return amount;
+}
+
 const makePayment = async () => {
     const token = document.getElementById("token").value;
     const amount = document.getElementById("amount").value;
     const merchant = document.getElementById("to").value;
     const name = document.getElementById("name").value;
-    const desc = "From " + name;
+    const desc = document.getElementById("desc").value;
     const payBtn = document.getElementById("pay");
 
-    if (token && name && amount) {
+    if (token && name && amount && desc) {
         try {
             payBtn.innerText = "Loading..."
             const reni = await contract(reniAbi, reniAddress);
-            const tx = await reni.methods.makePayment(token, web3.utils.toWei(amount), desc, merchant).send({ from: account });
-            await tx.wait;
+            if (token != address0) {
+                const tx = await reni.methods.makePayment(token, web3.utils.toWei(amount), name, desc, merchant).send({ from: account });
+                await tx.wait;
+            } else {
+                const requireAmount = await requiredTokenAmount(weth, amount);
+                console.log({ requireAmount });
+                const tx = await reni.methods.makePayment(token, web3.utils.toWei(amount), name, desc, merchant).send({ from: account, value: requireAmount });
+            }
             // alert("Payment successful");
             payBtn.innerText = "Payment successful";
             payBtn.onclick = "";
@@ -242,6 +250,8 @@ const makePayment = async () => {
         alert("Enter amount to be paid");
     } else if (!name) {
         alert("Enter your name")
+    } else if (!desc) {
+        alert("Enter description");
     }
     else {
         alert("Please select a token");

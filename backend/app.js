@@ -19,7 +19,7 @@ app.set('view engine', 'ejs');
 
 // importing user context
 const User = require("./model/user");
-const Payment = require("./model/payment");
+const Transaction = require("./model/transaction");
 
 app.get("/", (req, res) => {
   res.status(200);
@@ -27,11 +27,11 @@ app.get("/", (req, res) => {
 })
 
 app.get("/:username", async (req, res) => {
-  const {username} = req.params;
-  const user = await User.findOne({username});
+  const { username } = req.params;
+  const user = await User.findOne({ username });
   if (user) {
     res.status(200);
-    res.render('payment', {merchant: username});
+    res.render('payment', { merchant: username });
   } else {
     res.status(404);
     res.send("User not found!");
@@ -41,27 +41,27 @@ app.get("/:username", async (req, res) => {
 // return a user details
 app.get("/user/:username", async (req, res) => {
   try {
-    const {username} = req.params;
-    const user = await User.findOne({username})
-    let {first_name, last_name, email, balance}  = user;
-    if(!balance) {
+    const { username } = req.params;
+    const user = await User.findOne({ username })
+    let { first_name, last_name, email, balance } = user;
+    if (!balance) {
       balance = 0;
     }
     res.status(200);
-    res.send({first_name, last_name, email, username, balance})
+    res.send({ first_name, last_name, email, username, balance })
   } catch (err) {
     res.status(404);
     res.send("user not found");
   }
 });
 
-app.post("/auth", auth, async(req, res) => {
+app.post("/auth", auth, async (req, res) => {
   try {
-    const {email} = req.user;
-    const user = await User.findOne({email});
-    const {first_name, last_name, username, balance} = user;
+    const { email } = req.user;
+    const user = await User.findOne({ email });
+    const { first_name, last_name, username, balance, transactions } = user;
     res.status(200);
-    res.send({first_name, last_name, email, username, email, balance});
+    res.send({ first_name, last_name, email, username, email, balance, transactions });
   } catch (err) {
     res.status(400);
     res.send("Bad request");
@@ -72,121 +72,133 @@ app.post("/auth", auth, async(req, res) => {
 // Register
 app.post("/register", async (req, res) => {
 
-    // Our register logic starts here
-    try {
-      // Get user input
-      const { first_name, last_name, email, username, password } = req.body;
-  
-      // Validate user input
-      if (!(email && password && first_name && last_name && username)) {
-        res.status(400).send("All input is required");
+  // Our register logic starts here
+  try {
+    // Get user input
+    const { first_name, last_name, email, username, password } = req.body;
+
+    // Validate user input
+    if (!(email && password && first_name && last_name && username)) {
+      res.status(400).send("All input is required");
+    }
+
+    // check if user already exist
+    // Validate if user exist in our database
+    const oldUser = await User.findOne({ email });
+
+    if (oldUser) {
+      return res.status(409).send("User Already Exist. Please Login!");
+    }
+
+    // Check if username is taken
+    const oldUsername = await User.findOne({ username });
+
+    if (oldUsername) {
+      return res.status(409).send("Username Already Taken!");
+    }
+
+    //Encrypt user password
+    encryptedPassword = await bcrypt.hash(password, 10);
+
+    // Create user in our database
+    const user = await User.create({
+      first_name,
+      last_name,
+      balance: 0,
+      email: email.toLowerCase(), // sanitize: convert email to lowercase
+      username: username.toLowerCase(),
+      password: encryptedPassword,
+    });
+
+    // Create token
+    const token = jwt.sign(
+      { user_id: user._id, email },
+      process.env.TOKEN_KEY,
+      {
+        expiresIn: "2h",
       }
-  
-      // check if user already exist
-      // Validate if user exist in our database
-      const oldUser = await User.findOne({ email });
-  
-      if (oldUser) {
-        return res.status(409).send("User Already Exist. Please Login");
-      }
-  
-      //Encrypt user password
-      encryptedPassword = await bcrypt.hash(password, 10);
-  
-      // Create user in our database
-      const user = await User.create({
-        first_name,
-        last_name,
-        balance: 0,
-        email: email.toLowerCase(), // sanitize: convert email to lowercase
-        username: username.toLowerCase(),
-        password: encryptedPassword,
-      });
-  
+    );
+    // save user token
+    user.token = token;
+
+    // return new user
+    res.status(201).json({ first_name, last_name, balance: 0, email, username, token });
+  } catch (err) {
+    console.log(err);
+  }
+  // Our register logic ends here
+});
+
+
+// Login
+app.post("/login", async (req, res) => {
+
+  // Our login logic starts here
+  try {
+    // Get user input
+    const { email, password } = req.body;
+
+    // Validate user input
+    if (!(email && password)) {
+      res.status(400).send("All input is required");
+    }
+    // Validate if user exist in our database
+    const user = await User.findOne({ email });
+
+    if (user && (await bcrypt.compare(password, user.password))) {
       // Create token
       const token = jwt.sign(
         { user_id: user._id, email },
         process.env.TOKEN_KEY,
         {
-          expiresIn: "2h",
+          expiresIn: "3d",
         }
       );
+
       // save user token
       user.token = token;
-  
-      // return new user
-      res.status(201).json({first_name, last_name, balance: 0, email, username, token});
-    } catch (err) {
-      console.log(err);
+      const { first_name, last_name, balance, transactions } = user;
+      // user
+      res.status(200).json({ first_name, last_name, email, balance, token, transactions });
+    } else {
+      res.status(400).send("Invalid Credentials");
     }
-    // Our register logic ends here
-  });
-  
-
-// Login
-app.post("/login", async (req, res) => {
-
-    // Our login logic starts here
-    try {
-      // Get user input
-      const { email, password } = req.body;
-  
-      // Validate user input
-      if (!(email && password)) {
-        res.status(400).send("All input is required");
-      }
-      // Validate if user exist in our database
-      const user = await User.findOne({ email });
-  
-      if (user && (await bcrypt.compare(password, user.password))) {
-        // Create token
-        const token = jwt.sign(
-          { user_id: user._id, email },
-          process.env.TOKEN_KEY,
-          {
-            expiresIn: "2h",
-          }
-        );
-  
-        // save user token
-        user.token = token;
-        const {first_name, last_name, balance} = user;
-        // user
-        res.status(200).json({first_name, last_name, email, balance, token});
-      } else {
-        res.status(400).send("Invalid Credentials");
-      }
-    } catch (err) {
-      console.log(err);
-    }
-    // Our register logic ends here
-  });
+  } catch (err) {
+    console.log(err);
+  }
+  // Our register logic ends here
+});
 
 // Listen to smart contract for payment and update user balance
-const reniAddress = "0x1350Fd1224E52D914AF74d18F979402bfc86656D";
+const reniAddress = "0x539cc5c501F3c1797849BD85f6d6137be922be15";
 const provider = new ethers.providers.JsonRpcProvider(`https://rpc-mumbai.maticvigil.com/v1/${process.env.MATIC_VIGIL_API_KEY}`);
 
 const contract = new ethers.Contract(reniAddress, reniAbi, provider);
-contract.on("paymentSuccessful", async(amount, payer, merchant, transactionId) => {
+contract.on("paymentSuccessful", async (amount, payer, payer_address, merchant, description) => {
   try {
     const value = ethers.utils.formatEther(amount);
+    console.log({ merchant })
 
-    // console.log("amount", amount, "payer", payer, "merchant", merchant, "desc", transactionId);
-    // // const username = ethers.utils.parseBytes32String(merchant.hash);
-    // // payer = ethers.utils.parseBytes32String(payer.hash);
-    // // const desc = ethers.utils.parseBytes32String(desc.hash);
-    // console.log("amount", value, "payer", payer, "merchant", merchant, "desc", transactionId);
-
-    const user = await User.findOne({username: merchant});
+    const user = await User.findOne({ username: merchant });
     let balance = user.balance || 0;
-    balance = Number(balance) + Number(value); 
-    await User.updateOne({username: merchant}, {balance: balance}); 
-    const user2 = await User.findOne({username: merchant});
+    balance = Number(balance) + Number(value);
+    const newTransaction = await Transaction.create({
+      type: "payment",
+      payer,
+      payer_address,
+      amount: Number(ethers.utils.formatEther(amount)),
+      merchant,
+      description,
+      status: "confirm",
+    })
+    const transactions = user.transactions;
+    transactions.unshift(newTransaction);
+    await User.updateOne({ username: merchant }, { balance, transactions });
   } catch (err) {
     console.log(err)
   }
 });
-  
+
 
 
 module.exports = app;

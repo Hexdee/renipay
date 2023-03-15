@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href='/style.css' >
-  <title>ReniPay</title>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.1/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href='/style.css'>
+    <title>ReniPay</title>
+    <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.1/dist/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
 </head>
+
 <body>
     <div class="container">
         <header>
             <h1 class="title">Reni</h1>
-            <h2 >Payment page</h2>
+            <h2>Payment page</h2>
         </header>
         <section class="portfolio">
             <h3>Your portfolio</h3>
@@ -39,7 +41,13 @@
                     <label for="name">Payment By: </label>
                     <input type="text" name="name" id="name" placeholder="Enter your name">
                 </div>
-                <div class="connect" onclick="connect()"><div class="connect-icon"></div><span id="connect">Connect Wallet</span> </div>
+                <div class="form-element">
+                    <label for="desc">Description: </label>
+                    <input type="text" name="desc" id="desc" placeholder="Enter description">
+                </div>
+                <div class="connect" onclick="connect()">
+                    <div class="connect-icon"></div><span id="connect">Connect Wallet</span>
+                </div>
                 <div class="form-element">
                     <label for="token">Token: </label>
                     <select name="token" id="token">
@@ -48,7 +56,7 @@
                         <option value="eth">2.3 ETH</option>
                         <option value="eth">98 MATIC</option> -->
                     </select>
-                </div>                
+                </div>
                 <button type="button" id="pay" onclick="makePayment()">Pay with Reni</button>
                 <button type="button" id="approve" onclick="approveToken()">Approve Token</button>
             </form>
@@ -56,4 +64,5 @@
     </div>
     <script src="/script.js"></script>
 </body>
+
 </html>
