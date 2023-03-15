@@ -7,19 +7,29 @@ import "./IUniswapV2Router02.sol";
 import "./IERC20.sol";
 import "./TransferHelper.sol";
 
-contract ReniPay is Ownable { 
-
+contract ReniPay is Ownable {
     uint256 public slippage;
     address public swapRouter = 0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506;
     address public stableCoin = 0xA5E9Bad00A0b8291b02DEC6286f1db1C35a9903a;
 
-    event paymentSuccessful(uint256 amount, address payer, string merchant, string transactionId);
+    event paymentSuccessful(
+        uint256 amount,
+        string payer,
+        address payer_address,
+        string merchant,
+        string description
+    );
     event routerUpdated(address proviousRouter, address newRouter);
     event stableCoinUpdated(address proviousStableCoin, address newStableCoin);
     event slippageUpdated(uint256 previousSlippage, uint256 newSlippage);
 
-    function makePayment(address _token, uint256 _amountInUSD, string memory _transactionId, string memory _merchant) public payable {
-
+    function makePayment(
+        address _token,
+        uint256 _amountInUSD,
+        string memory _name,
+        string memory _description,
+        string memory _merchant
+    ) public payable {
         address[] memory _path;
         _path = new address[](2);
         _path[0] = _token;
@@ -30,19 +40,40 @@ contract ReniPay is Ownable {
             // Get the amount of token to swap
             _tokenAmount = requiredTokenAmount(_amountInUSD, _token);
 
-            TransferHelper.safeTransferFrom(_token, msg.sender, address(this), _tokenAmount);
+            TransferHelper.safeTransferFrom(
+                _token,
+                msg.sender,
+                address(this),
+                _tokenAmount
+            );
 
             // Swap to stableCoin
             _swap(_tokenAmount, _amountInUSD, _path);
-
         } else if (_token == stableCoin) {
-            TransferHelper.safeTransferFrom(_token, msg.sender, address(this), _amountInUSD);
+            TransferHelper.safeTransferFrom(
+                _token,
+                msg.sender,
+                address(this),
+                _amountInUSD
+            );
         } else {
-            _tokenAmount = requiredTokenAmount(_amountInUSD, IUniswapV2Router02(swapRouter).WETH());
-            require(msg.value >= _tokenAmount, 'Insufficient amount!');
-            IUniswapV2Router02(swapRouter).swapETHForExactTokens{ value: _tokenAmount }(_amountInUSD, _path, address(this), block.timestamp);
+            _path[0] = IUniswapV2Router02(swapRouter).WETH();
+            _tokenAmount = requiredTokenAmount(
+                _amountInUSD,
+                IUniswapV2Router02(swapRouter).WETH()
+            );
+            require(msg.value >= _tokenAmount, "Insufficient amount!");
+            IUniswapV2Router02(swapRouter).swapETHForExactTokens{
+                value: _tokenAmount
+            }(_amountInUSD, _path, address(this), block.timestamp);
         }
-        emit paymentSuccessful(_amountInUSD, msg.sender, _merchant, _transactionId);
+        emit paymentSuccessful(
+            _amountInUSD,
+            _name,
+            msg.sender,
+            _merchant,
+            _description
+        );
     }
 
     function updateRouter(address _router) external onlyOwner {
@@ -64,20 +95,33 @@ contract ReniPay is Ownable {
     }
 
     // Get the require amount of token for a swap
-    function requiredTokenAmount(uint256 _amountInUSD, address _token) public view returns (uint256 _tokenAmount) {
+    function requiredTokenAmount(
+        uint256 _amountInUSD,
+        address _token
+    ) public view returns (uint256 _tokenAmount) {
         address[] memory _path;
         _path = new address[](2);
         _path[0] = _token;
         _path[1] = stableCoin;
-        uint256[] memory _tokenAmounts = IUniswapV2Router02(swapRouter).getAmountsIn(_amountInUSD, _path);
-        _tokenAmount = _tokenAmounts[0] + (_tokenAmounts[0] * slippage / 100);
+        uint256[] memory _tokenAmounts = IUniswapV2Router02(swapRouter)
+            .getAmountsIn(_amountInUSD, _path);
+        _tokenAmount = _tokenAmounts[0] + ((_tokenAmounts[0] * slippage) / 100);
     }
 
-
     // Swap from tokens to a stablecoin
-    function _swap(uint256 _tokenAmount, uint256 _amountInUSD, address[] memory _path) internal returns (uint256[] memory _amountOut) {
+    function _swap(
+        uint256 _tokenAmount,
+        uint256 _amountInUSD,
+        address[] memory _path
+    ) internal returns (uint256[] memory _amountOut) {
         // Approve the router to swap token.
         TransferHelper.safeApprove(_path[0], swapRouter, _tokenAmount);
-        _amountOut = IUniswapV2Router02(swapRouter).swapTokensForExactTokens(_amountInUSD, _tokenAmount, _path, owner(), block.timestamp);
+        _amountOut = IUniswapV2Router02(swapRouter).swapTokensForExactTokens(
+            _amountInUSD,
+            _tokenAmount,
+            _path,
+            owner(),
+            block.timestamp
+        );
     }
 }
