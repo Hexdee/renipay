@@ -48,7 +48,7 @@ app.get("/user/:username", async (req, res) => {
       balance = 0;
     }
     res.status(200);
-    res.send({ first_name, last_name, email, username, balance })
+    res.send({ first_name, last_name, email, username, balance: balance.toFixed(2) });
   } catch (err) {
     res.status(404);
     res.send("user not found");
@@ -61,7 +61,7 @@ app.post("/auth", auth, async (req, res) => {
     const user = await User.findOne({ email });
     const { first_name, last_name, username, balance, transactions } = user;
     res.status(200);
-    res.send({ first_name, last_name, email, username, email, balance, transactions });
+    res.send({ first_name, last_name, email, username, email, balance: balance.toFixed(2), transactions });
   } catch (err) {
     res.status(400);
     res.send("Bad request");
@@ -159,7 +159,7 @@ app.post("/login", async (req, res) => {
       user.token = token;
       const { first_name, last_name, balance, transactions } = user;
       // user
-      res.status(200).json({ first_name, last_name, email, balance, token, transactions });
+      res.status(200).json({ first_name, last_name, email, balance: balance.toFixed(2), token, transactions });
     } else {
       res.status(400).send("Invalid Credentials");
     }
@@ -170,13 +170,13 @@ app.post("/login", async (req, res) => {
 });
 
 // Listen to smart contract for payment and update user balance
-const reniAddress = "0x539cc5c501F3c1797849BD85f6d6137be922be15";
+const reniAddress = "0xa5AbfB0ABcaBfeE47996BCC0DE4022dC4f09D087";
 const provider = new ethers.providers.JsonRpcProvider(`https://rpc-mumbai.maticvigil.com/v1/${process.env.MATIC_VIGIL_API_KEY}`);
 
 const contract = new ethers.Contract(reniAddress, reniAbi, provider);
 contract.on("paymentSuccessful", async (amount, payer, payer_address, merchant, description) => {
   try {
-    const value = ethers.utils.formatEther(amount);
+    const value = Number(amount) / 10 ** 6;
     console.log({ merchant })
 
     const user = await User.findOne({ username: merchant });
@@ -186,7 +186,7 @@ contract.on("paymentSuccessful", async (amount, payer, payer_address, merchant, 
       type: "payment",
       payer,
       payer_address,
-      amount: Number(ethers.utils.formatEther(amount)),
+      amount: Number(value),
       merchant,
       description,
       status: "confirm",

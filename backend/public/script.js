@@ -1,11 +1,12 @@
-var reniAddress = "0x539cc5c501F3c1797849BD85f6d6137be922be15";
-var reniAbi = [{ "inputs": [{ "internalType": "address", "name": "_token", "type": "address" }, { "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_description", "type": "string" }, { "internalType": "string", "name": "_merchant", "type": "string" }], "name": "makePayment", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "address", "name": "_token", "type": "address" }], "name": "requiredTokenAmount", "outputs": [{ "internalType": "uint256", "name": "_tokenAmount", "type": "uint256" }], "stateMutability": "view", "type": "function" }];
-var erc20Abi = [{ "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "approve", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }], "name": "allowance", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }];
-var address0 = "0x0000000000000000000000000000000000000000";
-var weth = "0x5B67676a984807a212b1c59eBFc9B3568a474F0a"
+const renipayAddress = "0xa5AbfB0ABcaBfeE47996BCC0DE4022dC4f09D087";
+const renipayAbi = [{ "inputs": [{ "internalType": "address", "name": "_token", "type": "address" }, { "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "string", "name": "_name", "type": "string" }, { "internalType": "string", "name": "_description", "type": "string" }, { "internalType": "string", "name": "_merchant", "type": "string" }], "name": "makePayment", "outputs": [], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "uint256", "name": "_amountInUSD", "type": "uint256" }, { "internalType": "address", "name": "_token", "type": "address" }], "name": "requiredTokenAmount", "outputs": [{ "internalType": "uint256", "name": "_tokenAmount", "type": "uint256" }], "stateMutability": "view", "type": "function" }];
+const erc20Abi = [{ "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "approve", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "balance", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }], "name": "allowance", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }];
+const address0 = "0x0000000000000000000000000000000000000000";
+const weth = "0x5B67676a984807a212b1c59eBFc9B3568a474F0a"
+const stableCoinDecimals = 1e6;
 
 // https://docs.walletconnect.com/quick-start/dapps/web3-provider
-var provider = new WalletConnectProvider.default({
+const provider = new WalletConnectProvider.default({
     rpc: {
         //1: "https://cloudflare-eth.com/", // https://ethereumnodes.com/
         //137: "https://polygon-rpc.com/", // https://docs.polygon.technology/docs/develop/network-details/network/
@@ -18,11 +19,11 @@ var provider = new WalletConnectProvider.default({
 
 document.getElementById("token").addEventListener("change", async (e) => {
     //
-    const requiredTokenValue = 1;
+    const requiredTokenValue = 1 * stableCoinDecimals;
     const tokenAddress = e.target.value;
     const tokenContract = await contract(erc20Abi, tokenAddress);
     try {
-        const allowance = Number(await tokenContract.methods.allowance(account, reniAddress).call());
+        const allowance = Number(await tokenContract.methods.allowance(account, renipayAddress).call());
         const payBtn = document.getElementById("pay");
         const approveBtn = document.getElementById("approve");
         if (allowance < requiredTokenValue) {
@@ -67,8 +68,9 @@ const setTokens = async (tokens) => {
 
 const setPortfolio = async (tokens) => {
     let tokensElement = "";
+    console.log({ tokens })
     tokens.map((tkn) => {
-        let balance = tkn.balance / 10e18;
+        let balance = tkn.balance / 10 ** tkn.decimals;
         if (balance < 0.01) {
             balance = balance.toFixed(4)
         } else {
@@ -88,7 +90,8 @@ const init = async (account) => {
         const matic = {
             symbol: "MATIC",
             token_address: address0,
-            balance: Number(await window.ethereum.request({ method: 'eth_getBalance', params: [account, 'latest'] }))
+            balance: Number(await window.ethereum.request({ method: 'eth_getBalance', params: [account, 'latest'] })),
+            decimals: 18
         }
 
         const tokens = [matic, ...(await getTokens(account))];
@@ -107,7 +110,6 @@ const connect = async () => {
     if (window.ethereum) {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const account = accounts[0];
-        init(account);
         web3 = new Web3(window.ethereum);
         window.w3 = web3;
         try {
@@ -148,6 +150,7 @@ const connect = async () => {
                 init(accounts[0]);
             });
         }
+        init(account);
     } else {
         if (provider.connected) {
             await provider.disconnect();
@@ -198,7 +201,7 @@ const approveToken = async () => {
     try {
         approveBtn.innerText = "Loading...";
         const tokenContract = await contract(erc20Abi, tokenAddress);
-        const tx = await tokenContract.methods.approve(reniAddress, "0xffffffffffffffffffffffffffffffff").send({ from: account });
+        const tx = await tokenContract.methods.approve(renipayAddress, "0xffffffffffffffffffffffffffffffff").send({ from: account });
         await tx.wait;
         payBtn.style.display = "block";
         approveBtn.style.display = "none";
@@ -212,8 +215,8 @@ const approveToken = async () => {
 }
 
 const requiredTokenAmount = async (token, amountInUSD) => {
-    const reni = await contract(reniAbi, reniAddress);
-    const amount = await reni.methods.requiredTokenAmount(web3.utils.toWei(amountInUSD), token).call();
+    const renipay = await contract(renipayAbi, renipayAddress);
+    const amount = await renipay.methods.requiredTokenAmount(amountInUSD * stableCoinDecimals, token).call();
     return amount;
 }
 
@@ -228,14 +231,13 @@ const makePayment = async () => {
     if (token && name && amount && desc) {
         try {
             payBtn.innerText = "Loading..."
-            const reni = await contract(reniAbi, reniAddress);
+            const renipay = await contract(renipayAbi, renipayAddress);
             if (token != address0) {
-                const tx = await reni.methods.makePayment(token, web3.utils.toWei(amount), name, desc, merchant).send({ from: account });
+                const tx = await renipay.methods.makePayment(token, amount * stableCoinDecimals, name, desc, merchant).send({ from: account });
                 await tx.wait;
             } else {
                 const requireAmount = await requiredTokenAmount(weth, amount);
-                console.log({ requireAmount });
-                const tx = await reni.methods.makePayment(token, web3.utils.toWei(amount), name, desc, merchant).send({ from: account, value: requireAmount });
+                const tx = await renipay.methods.makePayment(token, amount * stableCoinDecimals, name, desc, merchant).send({ from: account, value: requireAmount });
             }
             // alert("Payment successful");
             payBtn.innerText = "Payment successful";
@@ -244,7 +246,7 @@ const makePayment = async () => {
         } catch (err) {
             console.log(err);
             alert("An error occured");
-            payBtn.innerText = "Pay with Reni";
+            payBtn.innerText = "Pay with ReniPay";
         }
     } else if (!amount) {
         alert("Enter amount to be paid");
