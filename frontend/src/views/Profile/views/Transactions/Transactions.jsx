@@ -220,7 +220,7 @@ const Transactions = ({ isLoading }) => {
     //   setIsLoadingTransactions(false);
     //     setTransactions(tableBody.slice(0, SINGLE_STRETCH));
     // }, 2000);
-    return () => {};
+    return () => { };
   }, [isLoading, user?.transactions]);
 
   const handleShowMore = () => {
@@ -269,7 +269,9 @@ const Transactions = ({ isLoading }) => {
                       {item?.description}
                     </td>
                     <td>{item?.amount}</td>
-                    <td>{item?.createdAt}</td>
+                    <td>{item &&
+                      new Date(item.createdAt).toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" })
+                    }</td>
                   </tr>
                 </>
               ))}
